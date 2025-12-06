@@ -4,7 +4,7 @@ export type AuthResult = 'pass' | 'fail' | 'neutral' | 'none' | 'temperror' | 'p
 export interface AuthResults {
   spf: { result: AuthResult; from: string };
   dkim: { result: AuthResult; domain: string };
-  dmarc: { result: AuthResult; domain: string };
+  dmarc: { result: AuthResult; domain:string };
 }
 
 const getUnique = (arr: string[]) => [...new Set(arr)];
@@ -16,12 +16,27 @@ export function extractIps(text: string): string[] {
 }
 
 export function extractDomains(text: string): string[] {
-  const domainRegex = /(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}/g;
-  let matches = text.match(domainRegex) || [];
-  // Filter out IP addresses and simple numbers
-  matches = matches.filter(d => !/^\d+\.\d+\.\d+\.\d+$/.test(d) && !/^\d+$/.test(d));
+  const receivedHeaders = text.match(/Received: from ([\s\S]*?)(?=\n[A-Z]|$)/gi) || [];
+  const fromDomains = receivedHeaders.map(header => {
+      const match = header.match(/from\s+([^\s(]+)/);
+      return match ? match[1] : null;
+  }).filter((d): d is string => d !== null);
+
+  const otherDomainsRegex = /(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}/g;
+  let otherMatches = text.match(otherDomainsRegex) || [];
+
+  let allDomains = [...fromDomains, ...otherMatches];
+  
+  // Filter out IP addresses and simple numbers, and domains with invalid characters
+  allDomains = allDomains.filter(d => 
+    !/^\d+(\.\d+){3}$/.test(d) && 
+    !/^\d+$/.test(d) &&
+    !d.startsWith('.') && !d.endsWith('.') &&
+    !d.includes('..')
+  );
+
   // Convert to lowercase and get unique domains
-  return getUnique(matches.map(d => d.toLowerCase()));
+  return getUnique(allDomains.map(d => d.toLowerCase().replace(/\[|\]/g, '')));
 }
 
 export function extractLinks(text: string): string[] {

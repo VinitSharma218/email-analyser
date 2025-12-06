@@ -123,6 +123,21 @@ export default function AnalysisResults({ result }: { result: AnalysisResult }) 
   );
 }
 
+const getRootDomain = (domain: string) => {
+    const parts = domain.split('.');
+    if (parts.length > 2) {
+        // Handle common TLDs like .co.uk, .com.au, etc.
+        const twoPartTlds = ['co', 'com', 'org', 'net', 'gov', 'edu'];
+        if (twoPartTlds.includes(parts[parts.length - 2]) && parts.length > 2) {
+             if (parts.length > 3) {
+                return parts.slice(-3).join('.');
+             }
+        }
+        return parts.slice(-2).join('.');
+    }
+    return domain;
+};
+
 const DataTable = ({ data, type }: { data: string[], type: 'link' | 'domain' | 'ip' }) => {
     if (data.length === 0) {
         return <p className="text-muted-foreground text-center py-4">No {type}s found.</p>;
@@ -143,7 +158,7 @@ const DataTable = ({ data, type }: { data: string[], type: 'link' | 'domain' | '
                         {type === 'domain' && (
                             <TableCell className="text-right">
                                 <Button variant="ghost" size="icon" asChild>
-                                  <a href={`https://www.virustotal.com/gui/domain/${item}`} target="_blank" rel="noopener noreferrer" title="Check on VirusTotal">
+                                  <a href={`https://www.virustotal.com/gui/domain/${getRootDomain(item)}`} target="_blank" rel="noopener noreferrer" title="Check on VirusTotal">
                                       <ExternalLink className="h-4 w-4 text-primary/80"/>
                                   </a>
                                 </Button>
