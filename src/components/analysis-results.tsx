@@ -27,6 +27,7 @@ import {
     ExternalLink
 } from 'lucide-react';
 import type { AuthResult } from '@/lib/parser';
+import { Button } from '@/components/ui/button';
 
 const AuthStatusIndicator = ({ status }: { status: AuthResult }) => {
     switch (status) {
